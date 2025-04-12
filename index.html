@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="lib/tableau.extensions.1.latest.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.4.5/jscolor.min.js"></script>
+    <title>Pivot Table Generator</title>
+    <style>
+        body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+}
+        #config-panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid #808080; }
+        .config-section { margin-bottom: 20px; border: 1px solid #808080; padding: 15px; border-radius: 8px; background: #fff; }
+        .columns-select { width: 100%; height: 120px; margin: 10px 0; border: 1px solid #808080; }
+        button { background: #4CAF50; color: white; padding: 8px 16px; border: 1px solid #808080; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #45a049; }
+        .sortable-list { min-height: 40px; border: 1px solid #808080; padding: 10px; margin: 10px 0; background: #fff; }
+        .sortable-item { display: flex; align-items: center; padding: 8px; margin: 4px 0; background: #f8f9fa; border: 1px solid #808080; cursor: move; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; background: white; border: 2px solid #808080; }
+        th, td { border: 1px solid #808080; padding: 10px; vertical-align: middle; }
+        .group-header { background: #f1f3f5; }
+        .table-title { vertical-align: middle !important; }
+        .header-rows-control { margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        .format-settings { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.2); z-index: 1000; border: 2px solid #808080; }
+        .format-tabs { display: flex; margin-bottom: 15px; }
+        .format-tab { padding: 10px; cursor: pointer; border-bottom: 2px solid transparent; }
+        .format-tab.active { border-color: #4CAF50; }
+        .format-content { display: none; }
+        .format-content.active { display: block; }
+        .color-picker, .alignment-control { display: flex; align-items: center; margin: 10px 0; gap: 10px; }
+        .condition-row { display: flex; align-items: center; margin: 10px 0; }
+        .condition-row select { width: auto; margin: 0 10px; border: 1px solid #808080; }
+        .title-section { margin-bottom: 20px; }
+        .title-section input, .title-section select { width: 300px; padding: 8px; margin: 5px; border: 1px solid #808080; }
+        .save-config { background: #2196F3 !important; }
+        .save-config:hover { background: #1976D2 !important; }
+        .title-color-controls { margin-top: 10px; display: flex; gap: 15px; flex-wrap: wrap; }
+        .title-color-picker { display: flex; align-items: center; gap: 5px; }
+        .merged-header { text-align: center !important; vertical-align: middle !important; }
+        .remove-btn { background: #ff4444 !important; margin-left: 5px; padding: 2px 8px !important; }
+        .remove-btn:hover { background: #cc0000 !important; }
+        .grand-total { background-color: #e9ecef !important; font-weight: bold; }
+        .rename-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.2); z-index: 1000; width: 400px; max-height: 80vh; overflow-y: auto; border: 2px solid #808080; }
+        .rename-field { display: flex; align-items: center; margin: 10px 0; }
+        .rename-field label { width: 120px; margin-right: 10px; overflow: hidden; text-overflow: ellipsis; }
+        .rename-field input { flex: 1; padding: 6px; }
+        select { padding: 5px; border-radius: 4px; border: 1px solid #808080; }
+        .subtotal-row {
+                background-color: #f8f9fa !important;
+                border-top: 2px solid #dee2e6 !important;
+            }
+
+            .subtotal-row td {
+                font-weight: 600 !important;
+            }
+
+            .subtotal {
+                background-color: #e9ecef !important;
+            }
+
+            .subtotal-row td.grand-total {
+  background-color: inherit !important;
+  font-weight: bold !important;
+}
+    </style>
+</head>
+<body>
+    <div id="config-panel">
+        <div class="config-section">
+            <h3>Header Rows</h3>
+            <div class="header-rows-control">
+                <label>Number of Header Rows:</label>
+                <input type="number" id="header-rows-count" min="0" value="0" style="width: 60px;">
+                <button onclick="applyHeaderRows()">Apply</button>
+            </div>
+        </div>
+
+        <div class="config-section title-section">
+            <h3>Table Title</h3>
+            <input type="text" id="table-title" placeholder="Enter custom title">
+            <span>OR</span>
+            <select id="title-column">
+                <option value="">Select column for title</option>
+            </select>
+            <div class="title-color-controls">
+                <div class="alignment-control">
+                    <label>Title Alignment:</label>
+                    <select id="title-alignment">
+                        <option value="left">Left</option>
+                        <option value="center">Center</option>
+                        <option value="right">Right</option>
+                    </select>
+                </div>
+                <div class="title-color-picker">
+                    <label>Title Color:</label>
+                    <input class="jscolor" id="title-font-color" value="000000">
+                </div>
+                <div class="title-color-picker">
+                    <label>Title Background:</label>
+                    <input class="jscolor" id="title-bg-color" value="F8F9FA">
+                </div>
+            </div>
+        </div>
+
+        <div class="format-tab" onclick="showHeaderFormatTab('subtotals')">Subtotals</div>
+
+        <div class="config-section">
+            <h3>Available Columns</h3>
+            <select id="available-columns" class="columns-select" multiple></select>
+            <div class="button-group">
+                <button onclick="addToSection('group')">Add to Rows</button>
+                <button onclick="addToSection('pivot')">Add to Columns</button>
+                <button onclick="addToSection('value')">Add to Values</button>
+            </div>
+        </div>
+
+        <div class="config-section">
+            <h3>Subtotal Levels</h3>
+            <select id="subtotal-level-select" multiple style="width: 100%; height: 80px;">
+              <!-- The options could be dynamically generated based on the number of group columns -->
+              <option value="0">Group Level 1</option>
+              <option value="1">Group Level 2</option>
+              <option value="2">Group Level 3</option>
+            </select>
+            <p>Select one or more group levels to show subtotals.</p>
+          </div>
+
+        <div class="config-section">
+            <h3>Totals</h3>
+            <label><input type="checkbox" id="show-subtotals"> Row Subtotals</label>
+            <label><input type="checkbox" id="show-row-totals"> Row Grand Totals</label>
+            <label><input type="checkbox" id="show-column-totals"> Column Grand Totals</label>
+        </div>
+
+        <div class="config-section">
+            <h3>Row Groups</h3>
+            <div id="group-columns" class="sortable-list"></div>
+        </div>
+
+        <div class="config-section">
+            <h3>Column Groups</h3>
+            <div id="pivot-columns" class="sortable-list"></div>
+        </div>
+
+        <div class="config-section">
+            <h3>Values</h3>
+            <div id="value-columns" class="sortable-list"></div>
+        </div>
+
+        <div class="button-group">
+            <button onclick="showRenameModal()">Rename Fields</button>
+            <button onclick="showHeaderFormatModal()">Format Headers</button>
+            <button id="generate-btn">Generate Pivot Table</button>
+            <button id="export-btn">Export to Excel</button>
+            <button id="save-btn" class="save-config">Save Configuration</button>
+        </div>
+    </div>
+    <div id="data-container"></div>
+
+    <div id="format-settings" class="format-settings">
+        <div class="format-tabs">
+            <div class="format-tab active" onclick="showFormatTab('basic')">Basic</div>
+            <div class="format-tab" onclick="showFormatTab('conditional')">Conditional</div>
+            <div style="flex:1"></div>
+            <button onclick="closeFormatSettings()">×</button>
+        </div>
+        
+        <div id="basic-format" class="format-content active">
+            <div class="color-picker">
+                <label>Number Format:</label>
+                <select id="format-type">
+                    <option value="number">Number</option>
+                    <option value="currency">Currency</option>
+                    <option value="percentage">Percentage</option>
+                </select>
+            </div>
+            <div class="color-picker" id="currency-symbol-container" style="display: none;">
+                <label>Currency Symbol:</label>
+                <input type="text" id="currency-symbol" class="currency-symbol-input" value="$" maxlength="3">
+            </div>
+            <div class="color-picker">
+                <label>Decimal Places:</label>
+                <input type="number" id="decimals" min="0" max="4" value="2">
+            </div>
+            <div class="color-picker">
+                <label>Font Color:</label>
+                <input class="jscolor" id="font-color" value="000000">
+            </div>
+            <div class="color-picker">
+                <label>Background Color:</label>
+                <input class="jscolor" id="bg-color" value="FFFFFF">
+            </div>
+        </div>
+
+        <div id="conditional-format" class="format-content">
+            <div id="conditions-container"></div>
+            <button onclick="addNewCondition()">+ Add Condition</button>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button onclick="saveFormatSettings()">Save</button>
+            <button onclick="closeFormatSettings()">Cancel</button>
+        </div>
+    </div>
+
+    <div id="rename-modal" class="rename-modal">
+        <h3>Rename Fields</h3>
+        <div id="rename-fields-list"></div>
+        <div style="margin-top: 20px;">
+            <button onclick="saveRenames()">Save Changes</button>
+            <button onclick="closeRenameModal()">Cancel</button>
+        </div>
+    </div>
+
+    <div id="header-format-modal" class="format-settings">
+        <div class="format-tabs">
+            <div class="format-tab active" onclick="showHeaderFormatTab('row-groups')">Row Groups</div>
+            <div class="format-tab" onclick="showHeaderFormatTab('column-groups')">Column Groups</div>
+            <div class="format-tab" onclick="showHeaderFormatTab('totals')">Totals</div>
+            <div class="format-tab" onclick="showHeaderFormatTab('subtotals')">Subtotals</div> <!-- Moved here -->
+            <div style="flex:1"></div>
+            <button onclick="closeHeaderFormatModal()">×</button>
+        </div>
+
+        <div id="subtotals-format" class="format-content">
+            <div class="color-picker">
+                <label>Font Color:</label>
+                <input class="jscolor" id="subtotals-font-color" value="000000">
+            </div>
+            <div class="color-picker">
+                <label>Background Color:</label>
+                <input class="jscolor" id="subtotals-bg-color" value="F8F9FA">
+            </div>
+            <div class="alignment-control">
+                <label>Text Alignment:</label>
+                <select id="subtotals-alignment">
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
+                    <option value="right">Right</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="row-groups-format" class="format-content active">
+            <div class="color-picker">
+                <label>Font Color:</label>
+                <input class="jscolor" id="row-group-font-color" value="000000">
+            </div>
+            <div class="color-picker">
+                <label>Background Color:</label>
+                <input class="jscolor" id="row-group-bg-color" value="F1F3F5">
+            </div>
+            <div class="alignment-control">
+                <label>Text Alignment:</label>
+                <select id="row-group-alignment">
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
+                    <option value="right">Right</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="column-groups-format" class="format-content">
+            <div class="color-picker">
+                <label>Font Color:</label>
+                <input class="jscolor" id="column-group-font-color" value="000000">
+            </div>
+            <div class="color-picker">
+                <label>Background Color:</label>
+                <input class="jscolor" id="column-group-bg-color" value="E9ECEF">
+            </div>
+            <div class="alignment-control">
+                <label>Text Alignment:</label>
+                <select id="column-group-alignment">
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
+                    <option value="right">Right</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="totals-format" class="format-content">
+            <div class="color-picker">
+                <label>Font Color:</label>
+                <input class="jscolor" id="totals-font-color" value="000000">
+            </div>
+            <div class="color-picker">
+                <label>Background Color:</label>
+                <input class="jscolor" id="totals-bg-color" value="E9ECEF">
+            </div>
+            <div class="alignment-control">
+                <label>Text Alignment:</label>
+                <select id="totals-alignment">
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
+                    <option value="right">Right</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button onclick="saveHeaderFormatSettings()">Save</button>
+            <button onclick="closeHeaderFormatModal()">Cancel</button>
+        </div>
+    </div>
+
+    <div id="header-row-modal" class="format-settings">
+        <h3>Header Row Configuration</h3>
+        <div class="header-row-config">
+            <input type="hidden" id="current-header-row-index" value="-1">
+            <div class="title-section">
+                <label>Header Text:</label>
+                <input type="text" id="header-row-text" placeholder="Enter header text">
+                <span>OR</span>
+                <select id="header-row-column">
+                    <option value="">Select column for header</option>
+                </select>
+            </div>
+            <div class="title-color-controls">
+                <div class="alignment-control">
+                    <label>Text Alignment:</label>
+                    <select id="header-row-alignment">
+                        <option value="left">Left</option>
+                        <option value="center">Center</option>
+                        <option value="right">Right</option>
+                    </select>
+                </div>
+                <div class="title-color-picker">
+                    <label>Font Color:</label>
+                    <input class="jscolor" id="header-row-font-color" value="000000">
+                </div>
+                <div class="title-color-picker">
+                    <label>Background Color:</label>
+                    <input class="jscolor" id="header-row-bg-color" value="F8F9FA">
+                </div>
+            </div>
+            <div style="margin-top: 20px;">
+                <button onclick="saveHeaderRowConfig()">Save</button>
+                <button onclick="closeHeaderRowModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    let allData = [];
+    let columns = [];
+    let sortables = {};
+    let currentFormattingColumn = null;
+    let formatSettings = {};
+    let titleColumnMap = {};
+    let tableTitle = '';
+    let titleFontColor = '000000';
+    let titleBgColor = 'F8F9FA';
+    let titleAlignment = 'center';
+    let fieldRenames = {};
+    let headerRowsCount = 0;
+    let headerRowSettings = [];
+    let headerFormatSettings = {
+    rowGroups: { fontColor: '000000', bgColor: 'F1F3F5', textAlign: 'left' },
+    columnGroups: { fontColor: '000000', bgColor: 'E9ECEF', textAlign: 'center' },
+    totals: { fontColor: '000000', bgColor: 'E9ECEF', textAlign: 'right' },
+    subtotals: { fontColor: '000000', bgColor: 'E9ECEF', textAlign: 'left' } // Add default subtotals
+};
+
+    function initSortables() {
+        ['group', 'pivot', 'value'].forEach(type => {
+            sortables[type] = Sortable.create(document.getElementById(`${type}-columns`), {
+                group: 'shared',
+                animation: 150,
+                onSort: () => {
+                    generatePivotTable();
+                    saveConfiguration();
+                }
+            });
+        });
+    }
+
+    window.addToSection = function(type) {
+        const selected = Array.from(document.getElementById('available-columns').selectedOptions);
+        const targetList = document.getElementById(`${type}-columns`);
+        
+        selected.forEach(option => {
+            if (!targetList.querySelector(`[data-id="${option.value}"]`)) {
+                const item = document.createElement('div');
+                item.className = 'sortable-item';
+                item.dataset.id = option.value;
+                item.innerHTML = `
+                    <span>${option.textContent}</span>
+                    <button class="format-btn" onclick="openFormatSettings('${option.value}')">⚙️</button>
+                    <button class="remove-btn" onclick="removeFromSection('${type}', '${option.value}')">×</button>
+                `;
+                targetList.appendChild(item);
+            }
+        });
+        generatePivotTable();
+        saveConfiguration();
+    };
+
+    function removeFromSection(sectionType, columnId) {
+        const section = document.getElementById(`${sectionType}-columns`);
+        const item = section.querySelector(`[data-id="${columnId}"]`);
+        if (item) item.remove();
+        generatePivotTable();
+        saveConfiguration();
+    }
+
+    function getConfig(type) {
+        return Array.from(document.getElementById(`${type}-columns`).children).map(item => ({
+            id: item.dataset.id,
+            name: fieldRenames[item.dataset.id] || item.dataset.id
+        }));
+    }
+
+    function showRenameModal() {
+        const modal = document.getElementById('rename-modal');
+        const list = document.getElementById('rename-fields-list');
+        list.innerHTML = '';
+
+        const allFields = [
+            ...getConfig('group'),
+            ...getConfig('pivot'),
+            ...getConfig('value')
+        ];
+
+        allFields.forEach(field => {
+            const div = document.createElement('div');
+            div.className = 'rename-field';
+            div.innerHTML = `
+                <label title="${field.id}">${field.id}</label>
+                <input type="text" value="${fieldRenames[field.id] || field.name}">
+            `;
+            list.appendChild(div);
+        });
+
+        modal.style.display = 'block';
+    }
+
+    function closeRenameModal() {
+        document.getElementById('rename-modal').style.display = 'none';
+    }
+
+    function saveRenames() {
+        const inputs = document.querySelectorAll('#rename-fields-list .rename-field input');
+        inputs.forEach(input => {
+            const originalName = input.previousElementSibling.textContent;
+            const newName = input.value.trim();
+            fieldRenames[originalName] = newName || originalName;
+        });
+        closeRenameModal();
+        generatePivotTable();
+        saveConfiguration();
+    }
+
+    function showHeaderFormatModal() {
+        document.getElementById('header-format-modal').style.display = 'block';
+        loadHeaderFormatSettings();
+    }
+
+    function closeHeaderFormatModal() {
+        document.getElementById('header-format-modal').style.display = 'none';
+    }
+
+    function showHeaderFormatTab(tabName) {
+        document.querySelectorAll('#header-format-modal .format-tab, #header-format-modal .format-content')
+            .forEach(el => el.classList.remove('active'));
+        document.getElementById(`${tabName}-format`).classList.add('active');
+        document.querySelector(`[onclick="showHeaderFormatTab('${tabName}')"]`).classList.add('active');
+    }
+
+    function loadHeaderFormatSettings() {
+        document.getElementById('row-group-font-color').value = headerFormatSettings.rowGroups.fontColor;
+        document.getElementById('row-group-bg-color').value = headerFormatSettings.rowGroups.bgColor;
+        document.getElementById('row-group-alignment').value = headerFormatSettings.rowGroups.textAlign;
+
+        document.getElementById('column-group-font-color').value = headerFormatSettings.columnGroups.fontColor;
+        document.getElementById('column-group-bg-color').value = headerFormatSettings.columnGroups.bgColor;
+        document.getElementById('column-group-alignment').value = headerFormatSettings.columnGroups.textAlign;
+
+        document.getElementById('totals-font-color').value = headerFormatSettings.totals.fontColor;
+        document.getElementById('totals-bg-color').value = headerFormatSettings.totals.bgColor;
+        document.getElementById('totals-alignment').value = headerFormatSettings.totals.textAlign;
+
+        document.getElementById('subtotals-font-color').value = headerFormatSettings.subtotals.fontColor;
+        document.getElementById('subtotals-bg-color').value = headerFormatSettings.subtotals.bgColor;
+        document.getElementById('subtotals-alignment').value = headerFormatSettings.subtotals.textAlign;
+    }
+
+    function saveHeaderFormatSettings() {
+        headerFormatSettings = {
+            rowGroups: {
+                fontColor: document.getElementById('row-group-font-color').value.replace(/#/g, ''),
+                bgColor: document.getElementById('row-group-bg-color').value.replace(/#/g, ''),
+                textAlign: document.getElementById('row-group-alignment').value
+            },
+            columnGroups: {
+                fontColor: document.getElementById('column-group-font-color').value.replace(/#/g, ''),
+                bgColor: document.getElementById('column-group-bg-color').value.replace(/#/g, ''),
+                textAlign: document.getElementById('column-group-alignment').value
+            },
+            totals: {
+                fontColor: document.getElementById('totals-font-color').value.replace(/#/g, ''),
+                bgColor: document.getElementById('totals-bg-color').value.replace(/#/g, ''),
+                textAlign: document.getElementById('totals-alignment').value
+            },
+            subtotals: {
+                fontColor: document.getElementById('subtotals-font-color').value.replace(/#/g, ''),
+                bgColor: document.getElementById('subtotals-bg-color').value.replace(/#/g, ''),
+                textAlign: document.getElementById('subtotals-alignment').value
+            }
+        };
+        generatePivotTable();
+        closeHeaderFormatModal();
+        saveConfiguration();
+    }
+
+        const applyHeaderStyles = (element, headerType) => {
+        const settings = headerFormatSettings[headerType] || {};
+        element.style.color = `#${settings.fontColor || '000000'}`;
+        element.style.backgroundColor = `#${settings.bgColor || 'FFFFFF'}`;
+        element.style.textAlign = settings.textAlign || 'left';
+        element.style.border = '1px solid #808080';
+    };
+
+    function openFormatSettings(columnId) {
+        currentFormattingColumn = columnId;
+        formatSettings[columnId] = formatSettings[columnId] || {
+            fontColor: '000000',
+            bgColor: 'FFFFFF',
+            formatType: 'number',
+            currencySymbol: '$',
+            decimals: 2,
+            conditions: []
+        };
+        
+        document.getElementById('format-type').value = formatSettings[columnId].formatType;
+        document.getElementById('currency-symbol').value = formatSettings[columnId].currencySymbol;
+        document.getElementById('decimals').value = formatSettings[columnId].decimals;
+        document.getElementById('font-color').value = formatSettings[columnId].fontColor;
+        document.getElementById('bg-color').value = formatSettings[columnId].bgColor;
+        document.getElementById('currency-symbol-container').style.display = 
+            formatSettings[columnId].formatType === 'currency' ? 'flex' : 'none';
+        loadConditions(formatSettings[columnId].conditions);
+        document.getElementById('format-settings').style.display = 'block';
+    }
+
+    function closeFormatSettings() {
+        document.getElementById('format-settings').style.display = 'none';
+        currentFormattingColumn = null;
+    }
+
+    function showFormatTab(tabName) {
+        document.querySelectorAll('.format-tab, .format-content').forEach(el => {
+            el.classList.remove('active');
+        });
+        document.getElementById(`${tabName}-format`).classList.add('active');
+        document.querySelector(`[onclick="showFormatTab('${tabName}')"]`).classList.add('active');
+    }
+
+    function addNewCondition() {
+        const container = document.getElementById('conditions-container');
+        const div = document.createElement('div');
+        div.className = 'condition-row';
+        div.innerHTML = `
+            <select class="condition-operator">
+                <option value=">">Greater Than</option>
+                <option value="<">Less Than</option>
+                <option value="==">Equal To</option>
+            </select>
+            <input type="number" class="condition-value" step="0.01">
+            <label>Font:</label>
+            <input class="jscolor condition-font" value="000000">
+            <label>Background:</label>
+            <input class="jscolor condition-bg" value="FFFFFF">
+            <button onclick="this.parentElement.remove()">×</button>
+        `;
+        container.appendChild(div);
+    }
+
+    function loadConditions(conditions) {
+        const container = document.getElementById('conditions-container');
+        container.innerHTML = '';
+        conditions.forEach(cond => {
+            const div = document.createElement('div');
+            div.className = 'condition-row';
+            div.innerHTML = `
+                <select class="condition-operator">
+                    <option value=">" ${cond.operator === '>' ? 'selected' : ''}>Greater Than</option>
+                    <option value="<" ${cond.operator === '<' ? 'selected' : ''}>Less Than</option>
+                    <option value="==" ${cond.operator === '==' ? 'selected' : ''}>Equal To</option>
+                </select>
+                <input type="number" class="condition-value" value="${cond.value}" step="0.01">
+                <label>Font:</label>
+                <input class="jscolor condition-font" value="${cond.fontColor}">
+                <label>Background:</label>
+                <input class="jscolor condition-bg" value="${cond.bgColor}">
+                <button onclick="this.parentElement.remove()">×</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+            function applyHeaderRows() {
+                const newCount = parseInt(document.getElementById('header-rows-count').value, 10) || 0;
+                
+                // Truncate array if reducing row count
+                if (newCount < headerRowSettings.length) {
+                    headerRowSettings = headerRowSettings.slice(0, newCount);
+                }
+                
+                // Add new empty settings if increasing row count
+                while (headerRowSettings.length < newCount) {
+                    headerRowSettings.push({
+                        text: `Header Row ${headerRowSettings.length + 1}`,
+                        column: '',
+                        fontColor: '000000',
+                        bgColor: 'F8F9FA',
+                        textAlign: 'left'
+                    });
+                }
+                
+                headerRowsCount = newCount;
+                generatePivotTable();
+                saveConfiguration();
+            }
+
+    function configureHeaderRow(index) {
+        const modal = document.getElementById('header-row-modal');
+        const settings = headerRowSettings[index] || {
+            text: `Header Row ${index + 1}`,
+            column: '',
+            fontColor: '000000',
+            bgColor: 'F8F9FA',
+            textAlign: 'left'
+        };
+
+        document.getElementById('current-header-row-index').value = index;
+        document.getElementById('header-row-text').value = settings.text;
+        document.getElementById('header-row-column').value = settings.column;
+        document.getElementById('header-row-font-color').value = settings.fontColor;
+        document.getElementById('header-row-bg-color').value = settings.bgColor;
+        document.getElementById('header-row-alignment').value = settings.textAlign;
+        
+        modal.style.display = 'block';
+    }
+
+    function saveHeaderRowConfig() {
+        const index = parseInt(document.getElementById('current-header-row-index').value, 10);
+        if (isNaN(index) || index < 0) return;
+
+        // Update the settings object
+        headerRowSettings[index] = {
+            text: document.getElementById('header-row-text').value,
+            column: document.getElementById('header-row-column').value,
+            fontColor: document.getElementById('header-row-font-color').value.replace(/#/g, ''),
+            bgColor: document.getElementById('header-row-bg-color').value.replace(/#/g, ''),
+            textAlign: document.getElementById('header-row-alignment').value
+        };
+
+        closeHeaderRowModal();
+        generatePivotTable();  // Refresh the table
+        saveConfiguration();
+    }
+
+    function closeHeaderRowModal() {
+        document.getElementById('header-row-modal').style.display = 'none';
+    }
+
+    function saveFormatSettings() {
+        if (!currentFormattingColumn) return;
+
+        formatSettings[currentFormattingColumn] = {
+            fontColor: document.getElementById('font-color').value,
+            bgColor: document.getElementById('bg-color').value,
+            formatType: document.getElementById('format-type').value,
+            currencySymbol: document.getElementById('currency-symbol').value || '$',
+            decimals: parseInt(document.getElementById('decimals').value, 10),
+            conditions: []
+        };
+
+        document.querySelectorAll('.condition-row').forEach(row => {
+            formatSettings[currentFormattingColumn].conditions.push({
+                operator: row.querySelector('.condition-operator').value,
+                value: parseFloat(row.querySelector('.condition-value').value),
+                fontColor: row.querySelector('.condition-font').value,
+                bgColor: row.querySelector('.condition-bg').value
+            });
+        });
+
+        closeFormatSettings();
+        generatePivotTable();
+        saveConfiguration();
+    }
+
+    function createValueCell(value, columnId) {
+        const td = document.createElement('td');
+        const settings = formatSettings[columnId] || {};
+        const decimals = settings.decimals ?? 2;
+        const formatType = settings.formatType ?? 'number';
+        const currencySymbol = settings.currencySymbol || '$';
+
+        td.setAttribute('data-value', value);
+        td.setAttribute('data-column-id', columnId);
+
+        let formattedValue;
+        if (decimals === 0) {
+            switch(formatType) {
+                case 'currency':
+                    formattedValue = currencySymbol + Math.round(value);
+                    break;
+                case 'percentage':
+                    formattedValue = Math.round(value * 100) + '%';
+                    break;
+                default:
+                    formattedValue = Math.round(value);
+            }
+        } else {
+            switch(formatType) {
+                case 'currency':
+                    formattedValue = currencySymbol + value.toFixed(decimals);
+                    break;
+                case 'percentage':
+                    formattedValue = (value * 100).toFixed(decimals) + '%';
+                    break;
+                default:
+                    formattedValue = value.toFixed(decimals);
+            }
+        }
+        
+        td.textContent = formattedValue;
+
+        for (const cond of (settings.conditions || [])) {
+            let conditionMet = false;
+            switch(cond.operator) {
+                case '>': conditionMet = value > cond.value; break;
+                case '<': conditionMet = value < cond.value; break;
+                case '==': conditionMet = value === cond.value; break;
+            }
+            
+            if (conditionMet) {
+                td.style.color = `#${cond.fontColor}`;
+                td.style.backgroundColor = `#${cond.bgColor}`;
+                return td;
+            }
+        }
+
+        td.style.color = `#${settings.fontColor || '000000'}`;
+        td.style.backgroundColor = `#${settings.bgColor || 'FFFFFF'}`;
+
+        return td;
+    }
+
+        function generateAllCombinations(pivotCols, pivotValuesMap) {
+            if (pivotCols.length === 0) return [{}];
+            const combinations = [];
+            
+            function generate(index, currentCombo) {
+                if (index === pivotCols.length) {
+                    combinations.push({ ...currentCombo });
+                    return;
+                }
+                const col = pivotCols[index];
+                const values = pivotValuesMap.get(col.id);
+                values.forEach(value => {
+                    currentCombo[col.id] = value.toString(); // Ensure string comparison
+                    generate(index + 1, currentCombo);
+                });
+            }
+            
+            generate(0, {});
+            return combinations;
+        }
+
+            // Helper functions
+        function createHeaderStructure(pivotCols, combinations) {
+            const structure = [];
+            const field = pivotCols[0].id;
+            const groups = new Map();
+
+            combinations.forEach(combo => {
+                const value = combo[field];
+                if (!groups.has(value)) {
+                    groups.set(value, {
+                        value: value,
+                        span: 1,
+                        children: pivotCols.length > 1 ? 
+                            createHeaderStructure(
+                                pivotCols.slice(1),
+                                combinations.filter(c => c[field] === value)
+                            ) : null
+                    });
+                } else {
+                    groups.get(value).span++;
+                }
+            });
+
+            return Array.from(groups.values());
+        }
+
+        function createHeaderLevels(pivotCols, structure, levels = [], depth = 0) {
+            if (!structure || structure.length === 0) return levels;
+            
+            levels[depth] = levels[depth] || [];
+            structure.forEach(group => {
+                levels[depth].push({
+                    value: group.value,
+                    span: group.span
+                });
+                if (group.children) {
+                    createHeaderLevels(pivotCols.slice(1), group.children, levels, depth + 1);
+                }
+            });
+            
+            // Fill missing levels
+            for (let i = depth + 1; i < pivotCols.length; i++) {
+                levels[i] = levels[i] || [];
+            }
+            
+            return levels;
+        }
+
+        function createEmptyTh() {
+            const th = document.createElement('th');
+            th.style.backgroundColor = 'transparent';
+            th.style.border = 'none';
+            return th;
+        }
+
+        async function generatePivotTable() {
+    try {
+        const groupCols = getConfig('group');
+        const pivotCols = getConfig('pivot');
+        const valueCols = getConfig('value');
+        const showRowTotals = document.getElementById('show-row-totals').checked;
+        const showColumnTotals = document.getElementById('show-column-totals').checked;
+        const showSubtotals = document.getElementById('show-subtotals').checked;
+
+        if (!groupCols.length || !valueCols.length) {
+            alert('Please select at least one Row Group and one Value');
+            return;
+        }
+
+        // Read the user's selected subtotal levels.
+        // This assumes the user selections are returned as an array of strings;
+        // convert them to numbers.
+        let selectedSubtotalLevels = [];
+        const subtotalSelect = document.getElementById('subtotal-level-select');
+        if (subtotalSelect) {
+            selectedSubtotalLevels = Array.from(subtotalSelect.selectedOptions)
+                                        .map(opt => parseInt(opt.value, 10));
+            // Optional: if no levels selected, show none.
+            // Alternatively, default to all levels:
+            // if (!selectedSubtotalLevels.length) {
+            //    selectedSubtotalLevels = groupCols.map((_, i) => i);
+            // }
+        } else {
+            // Fallback: if the control is missing, default to all group levels.
+            selectedSubtotalLevels = groupCols.map((_, i) => i);
+        }
+
+        const pivotMap = new Map();
+        const rowKeysSet = new Set();
+        const colKeysSet = new Set();
+
+        // Process raw data
+        allData.forEach(row => {
+            const rowKey = groupCols.map(g => row[g.id]).join('|');
+            const colKey = pivotCols.map(p => row[p.id]).join('|');
+            const mapKey = `${rowKey}>>>${colKey}`; // Use unique separator
+
+            rowKeysSet.add(rowKey);
+            colKeysSet.add(colKey);
+
+            if (!pivotMap.has(mapKey)) pivotMap.set(mapKey, {});
+            valueCols.forEach(v => {
+                const numValue = parseFloat(row[v.id]) || 0;
+                pivotMap.get(mapKey)[v.id] = (pivotMap.get(mapKey)[v.id] || 0) + numValue;
+            });
+        });
+
+        const rowKeys = Array.from(rowKeysSet).sort();
+        const colKeys = Array.from(colKeysSet).sort((a, b) => a.localeCompare(b));
+
+        const table = document.createElement('table');
+        const thead = document.createElement('thead');
+        const tbody = document.createElement('tbody');
+        table.id = 'pivot-table';
+
+        // --- Custom header rows ---
+        for (let i = 0; i < headerRowsCount; i++) {
+            const settings = headerRowSettings[i] || {
+                text: `Header Row ${i + 1}`,
+                column: '',
+                fontColor: '000000',
+                bgColor: 'F8F9FA',
+                textAlign: 'left'
+            };
+
+            const headerRow = document.createElement('tr');
+            const headerCell = document.createElement('th');
+            
+            headerCell.style.cursor = 'pointer';
+            headerCell.onclick = () => configureHeaderRow(i);
+            
+            headerCell.textContent = settings.column ? titleColumnMap[settings.column] || '' : settings.text;
+            headerCell.colSpan = groupCols.length + (colKeys.length * valueCols.length) + (showRowTotals ? valueCols.length : 0);
+            headerCell.style.color = `#${settings.fontColor}`;
+            headerCell.style.backgroundColor = `#${settings.bgColor}`;
+            headerCell.style.textAlign = settings.textAlign;
+            
+            headerRow.appendChild(headerCell);
+            thead.appendChild(headerRow);
+        }
+
+        // Table title row
+        if (tableTitle) {
+            const titleRow = document.createElement('tr');
+            const titleCell = document.createElement('th');
+            titleCell.colSpan = groupCols.length + (colKeys.length * valueCols.length) + (showRowTotals ? valueCols.length : 0);
+            titleCell.textContent = tableTitle;
+            titleCell.className = 'table-title';
+            titleCell.style.color = `#${titleFontColor}`;
+            titleCell.style.backgroundColor = `#${titleBgColor}`;
+            titleCell.style.textAlign = titleAlignment;
+            titleRow.appendChild(titleCell);
+            thead.appendChild(titleRow);
+        }
+
+        // Column group headers
+        if (pivotCols.length > 0) {
+            const pivotValuesMap = new Map();
+            pivotCols.forEach(p => {
+                pivotValuesMap.set(p.id, [...new Set(allData.map(r => r[p.id]?.toString() ?? ''))]);
+            });
+
+            const allCombinations = generateAllCombinations(pivotCols, pivotValuesMap);
+            const structure = createHeaderStructure(pivotCols, allCombinations);
+            const levels = createHeaderLevels(pivotCols, structure);
+            const headerDepth = levels.length;
+
+            const groupHeaderRow = document.createElement('tr');
+            groupCols.forEach(gc => {
+                const th = document.createElement('th');
+                th.textContent = gc.name;
+                th.rowSpan = headerDepth + (valueCols.length > 1 ? 1 : 0);
+                applyHeaderStyles(th, 'rowGroups');
+                groupHeaderRow.appendChild(th);
+            });
+
+            levels[0].forEach(cell => {
+                const th = document.createElement('th');
+                th.textContent = cell.value;
+                th.colSpan = valueCols.length > 1 ? cell.span * valueCols.length : cell.span;
+                th.classList.add('group-header');
+                applyHeaderStyles(th, 'columnGroups');
+                groupHeaderRow.appendChild(th);
+            });
+
+            if (showRowTotals) {
+                const th = document.createElement('th');
+                th.textContent = 'Row Totals';
+                th.rowSpan = headerDepth;
+                th.colSpan = valueCols.length;
+                th.classList.add('grand-total');
+                applyHeaderStyles(th, 'totals');
+                groupHeaderRow.appendChild(th);
+            }
+
+            thead.appendChild(groupHeaderRow);
+
+            for (let depth = 1; depth < levels.length; depth++) {
+                const headerRow = document.createElement('tr');
+                levels[depth].forEach(cell => {
+                    const th = document.createElement('th');
+                    th.textContent = cell.value;
+                    th.colSpan = valueCols.length > 1 ? cell.span * valueCols.length : cell.span;
+                    th.classList.add('group-header');
+                    applyHeaderStyles(th, 'columnGroups');
+                    headerRow.appendChild(th);
+                });
+                thead.appendChild(headerRow);
+            }
+
+            if (valueCols.length > 1) {
+                const valueRow = document.createElement('tr');
+                colKeys.forEach(() => {
+                    valueCols.forEach(vc => {
+                        const th = document.createElement('th');
+                        th.textContent = vc.name;
+                        applyHeaderStyles(th, 'columnGroups');
+                        valueRow.appendChild(th);
+                    });
+                });
+
+                if (showRowTotals) {
+                    valueCols.forEach(vc => {
+                        const th = document.createElement('th');
+                        th.textContent = vc.name;
+                        applyHeaderStyles(th, 'totals');
+                        valueRow.appendChild(th);
+                    });
+                }
+
+                thead.appendChild(valueRow);
+            }
+        } else {
+            const headerRow = document.createElement('tr');
+            groupCols.forEach(gc => {
+                const th = document.createElement('th');
+                th.textContent = gc.name;
+                applyHeaderStyles(th, 'rowGroups');
+                headerRow.appendChild(th);
+            });
+
+            valueCols.forEach(vc => {
+                const th = document.createElement('th');
+                th.textContent = vc.name;
+                applyHeaderStyles(th, 'columnGroups');
+                headerRow.appendChild(th);
+            });
+
+            if (showRowTotals) {
+                valueCols.forEach(vc => {
+                    const th = document.createElement('th');
+                    th.textContent = vc.name;
+                    applyHeaderStyles(th, 'totals');
+                    headerRow.appendChild(th);
+                });
+            }
+
+            thead.appendChild(headerRow);
+        }
+
+        table.appendChild(thead);
+
+        // ------------------------------
+        // Process data rows with subtotals
+        // ------------------------------
+
+        // Instead of using currentGroupValues, we track the previous row's group values.
+        let prevGroupValues = null;
+
+        rowKeys.forEach((rowKey, rowIndex) => {
+            const rowValues = rowKey.split('|');
+
+            // Insert subtotals for group levels that changed (only if user selected that level)
+            if (showSubtotals && prevGroupValues !== null) {
+                for (let level = groupCols.length - 1; level >= 0; level--) {
+                    if (prevGroupValues[level] !== rowValues[level] &&
+                        selectedSubtotalLevels.indexOf(level) !== -1) {
+                        insertSubtotalRow(
+                            level,
+                            groupCols,
+                            prevGroupValues,
+                            colKeys,
+                            valueCols,
+                            pivotMap,
+                            tbody,
+                            null,
+                            showRowTotals
+                        );
+                    }
+                }
+            }
+
+            // Create regular data row
+            const row = document.createElement('tr');
+            rowValues.forEach(value => {
+                const td = document.createElement('td');
+                td.textContent = value;
+                td.style.color = '#000000';
+                td.style.backgroundColor = '#FFFFFF';
+                td.style.textAlign = 'left';
+                row.appendChild(td);
+            });
+
+            const rowTotal = {};
+            valueCols.forEach(v => rowTotal[v.id] = 0);
+
+            colKeys.forEach(colKey => {
+                const mapKey = `${rowKey}>>>${colKey}`; // FIXED SEPARATOR
+                const cellData = pivotMap.get(mapKey) || {};
+                valueCols.forEach(v => {
+                    const value = cellData[v.id] || 0;
+                    const td = createValueCell(value, v.id);
+                    row.appendChild(td);
+                    rowTotal[v.id] += value;
+                });
+            });
+
+            if (showRowTotals) {
+                valueCols.forEach(v => {
+                    const td = createValueCell(rowTotal[v.id], v.id);
+                    td.classList.add('grand-total');
+                    row.appendChild(td);
+                });
+            }
+
+            tbody.appendChild(row);
+            prevGroupValues = rowValues;
+        });
+
+        // Final subtotals for the last group (only for selected levels)
+        if (showSubtotals && prevGroupValues !== null) {
+            for (let level = groupCols.length - 1; level >= 0; level--) {
+                if (selectedSubtotalLevels.indexOf(level) !== -1) {
+                    insertSubtotalRow(
+                        level,
+                        groupCols,
+                        prevGroupValues,
+                        colKeys,
+                        valueCols,
+                        pivotMap,
+                        tbody,
+                        null,
+                        showRowTotals
+                    );
+                }
+            }
+        }
+
+        // ------------------------------
+        // Column totals
+        // ------------------------------
+        if (showColumnTotals) {
+            const footerRow = document.createElement('tr');
+            footerRow.classList.add('grand-total');
+
+            const colTotals = {};
+            colKeys.forEach(colKey => {
+                colTotals[colKey] = {};
+                valueCols.forEach(v => colTotals[colKey][v.id] = 0);
+            });
+
+            rowKeys.forEach(rowKey => {
+                colKeys.forEach(colKey => {
+                    const mapKey = `${rowKey}>>>${colKey}`; // FIXED SEPARATOR
+                    const cellData = pivotMap.get(mapKey) || {};
+                    valueCols.forEach(v => {
+                        colTotals[colKey][v.id] += cellData[v.id] || 0;
+                    });
+                });
+            });
+
+            groupCols.forEach((gc, index) => {
+                const td = document.createElement('td');
+                td.textContent = index === 0 ? 'Grand Total' : '';
+                applyHeaderStyles(td, 'rowGroups');
+                footerRow.appendChild(td);
+            });
+
+            colKeys.forEach(colKey => {
+                valueCols.forEach(v => {
+                    const td = createValueCell(colTotals[colKey][v.id], v.id);
+                    td.classList.add('grand-total');
+                    footerRow.appendChild(td);
+                });
+            });
+
+            if (showRowTotals) {
+                valueCols.forEach(v => {
+                    let grandSum = 0;
+                    colKeys.forEach(colKey => {
+                        grandSum += colTotals[colKey][v.id] || 0;
+                    });
+                    const td = createValueCell(grandSum, v.id);
+                    td.classList.add('grand-total');
+                    footerRow.appendChild(td);
+                });
+            }
+
+            tbody.appendChild(footerRow);
+        }
+
+        table.appendChild(tbody);
+        document.getElementById('data-container').innerHTML = '';
+        document.getElementById('data-container').appendChild(table);
+
+    } catch (error) {
+        console.error('Pivot generation error:', error);
+        alert('Error generating pivot table: ' + error.message);
+    }
+}
+
+
+
+// Helper functions for subtotals
+function insertSubtotalRow(level, groupCols, currentGroupValues, colKeys, valueCols, pivotMap, tbody, referenceRow, showRowTotals) {
+    const subtotalRow = document.createElement('tr');
+    subtotalRow.classList.add('subtotal-row');
+
+    // Consistent background color for subtotal rows
+    const subtotalBg = `#${headerFormatSettings.subtotals?.bgColor || 'E9ECEF'}`;
+
+    // Subtotal label & group columns
+    groupCols.forEach((gc, index) => {
+        const td = document.createElement('td');
+        if (index === level) {
+            td.textContent = `${currentGroupValues[level]} Subtotal`;
+            td.style.fontWeight = 'bold';
+        } else if (index < level) {
+            td.textContent = currentGroupValues[index];
+        } else {
+            td.textContent = '';
+        }
+        td.style.backgroundColor = subtotalBg; // 👈 Set BG color
+        subtotalRow.appendChild(td);
+    });
+
+    // Value cells for subtotals
+    colKeys.forEach(colKey => {
+        valueCols.forEach(v => {
+            const groupPrefix = currentGroupValues.slice(0, level + 1).join('|');
+            const subtotalValue = Array.from(pivotMap.entries())
+                .filter(([key]) => {
+                    const [rowPart] = key.split('>>>');
+                    return rowPart.startsWith(groupPrefix);
+                })
+                .reduce((sum, [key, data]) => {
+                    const [, colPart] = key.split('>>>');
+                    return colPart === colKey ? sum + (data[v.id] || 0) : sum;
+                }, 0);
+
+            const td = createValueCell(subtotalValue, v.id);
+            td.style.backgroundColor = subtotalBg; // 👈 Set BG color
+            subtotalRow.appendChild(td);
+        });
+    });
+
+    // Optional row totals
+    if (showRowTotals) {
+        valueCols.forEach(v => {
+            const groupPrefix = currentGroupValues.slice(0, level + 1).join('|');
+            const rowTotal = Array.from(pivotMap.entries())
+                .filter(([key]) => key.startsWith(groupPrefix))
+                .reduce((sum, [_, data]) => sum + (data[v.id] || 0), 0);
+
+            const td = createValueCell(rowTotal, v.id);
+            td.classList.add('subtotal');
+            td.style.backgroundColor = `#${headerFormatSettings.subtotals?.bgColor || 'E9ECEF'}`;
+            td.style.fontWeight = 'bold';
+            subtotalRow.appendChild(td);
+        });
+    }
+
+    tbody.insertBefore(subtotalRow, referenceRow ? referenceRow.nextSibling : null);
+}
+
+
+// Updated combination generator function
+function generateAllCombinations(pivotCols, pivotValuesMap) {
+    if (pivotCols.length === 0) return [{}];
+    
+    // Collect unique combinations directly from data
+    const seen = new Set();
+    const validCombinations = [];
+    
+    allData.forEach(row => {
+        const combo = {};
+        pivotCols.forEach(p => combo[p.id] = row[p.id]?.toString() || '');
+        const key = JSON.stringify(combo);
+        if (!seen.has(key)) {
+            seen.add(key);
+            validCombinations.push(combo);
+        }
+    });
+    
+    return validCombinations.sort((a, b) => {
+        return pivotCols.map(p => a[p.id].localeCompare(b[p.id])).find(r => r !== 0) || 0;
+    });
+}
+
+    async function exportExcel() {
+    try {
+        const worksheet = tableau.extensions.dashboardContent.dashboard.worksheets[0];
+        const worksheetName = worksheet.name.replace(/[^a-z0-9]/gi, '_') || 'pivot_data';
+        const table = document.getElementById('pivot-table');
+        const clone = table.cloneNode(true);
+
+        // Remove gear icons from header cells
+        clone.querySelectorAll('th button').forEach(button => {
+        button.remove();
+        });
+
+        // Apply dynamic alignment first
+        clone.querySelectorAll('th, td').forEach(cell => {
+            // Clear existing alignment styles
+            const existingStyle = cell.getAttribute('style') || '';
+            cell.setAttribute('style', existingStyle.replace(/text-align:\s*[^;]+;?/g, ''));
+
+            // 1. Handle Title Cell
+            if (cell.classList.contains('table-title')) {
+                cell.style.textAlign = titleAlignment;
+                return;
+            }
+
+            // 2. Handle Custom Header Rows
+            const headerRow = cell.closest('tr');
+            if (headerRow && clone.tHead && Array.from(clone.tHead.rows).includes(headerRow)) {
+                const rowIndex = Array.from(clone.tHead.rows).indexOf(headerRow);
+                if (rowIndex < headerRowsCount) {
+                    const settings = headerRowSettings[rowIndex];
+                    cell.style.textAlign = settings?.textAlign || 'left';
+                    return;
+                }
+            }
+
+            // 3. Handle Group Headers
+            if (cell.classList.contains('group-header')) {
+                const headerType = cell.closest('thead') ? 'rowGroups' : 'columnGroups';
+                cell.style.textAlign = headerFormatSettings[headerType].textAlign;
+                return;
+            }
+
+            // 4. Handle Value Cells
+            const columnId = cell.getAttribute('data-column-id');
+            if (columnId && formatSettings[columnId]) {
+                cell.style.textAlign = formatSettings[columnId].textAlign || 'right';
+            }
+        });
+
+            clone.querySelectorAll('.subtotal-row').forEach(row => {
+                row.style.backgroundColor = '#f3f6f9';
+                row.querySelectorAll('td').forEach(td => {
+                    td.style.fontWeight = 'bold';
+                });
+            });
+
+        // Apply Excel-specific formatting
+        clone.querySelectorAll('tr').forEach(row => {
+            row.style.height = '30pt';
+            row.style.mssoHeightRule = 'exactly';
+        });
+
+        clone.querySelectorAll('.grand-total').forEach(cell => {
+    cell.style.fontWeight = 'bold';
+    if (cell.closest('tr')?.classList.contains('subtotal-row')) {
+        cell.style.fontWeight = 'bold';
+    }
+});
+
+        clone.querySelectorAll('td').forEach(td => {
+            td.style.verticalAlign = 'middle';
+            td.style.padding = '5px 8px';
+            if (!td.style.textAlign) td.style.textAlign = 'right'; // Default for numbers
+        });
+
+        clone.querySelectorAll('th').forEach(th => {
+            th.style.verticalAlign = 'middle';
+            th.style.padding = '8px 10px';
+        });
+
+        clone.setAttribute('border', '1');
+        clone.style.borderCollapse = 'collapse';
+
+        clone.querySelectorAll('th, td').forEach(cell => {
+            const existingStyle = cell.getAttribute('style') || '';
+            cell.setAttribute('style', existingStyle + 
+                'border-left: 0.5pt solid #808080 !important; ' +
+                'border-right: 0.5pt solid #808080 !important; ' +
+                'border-top: 0.5pt solid #808080 !important; ' +
+                'border-bottom: 0.5pt solid #808080 !important;');
+
+            if (cell.classList.contains('grand-total')) {
+                cell.style.fontWeight = 'bold';
+            }
+
+            if (cell.classList.contains('table-title')) {
+                cell.style.verticalAlign = 'middle';
+                cell.style.color = `#${titleFontColor} !important`;
+                cell.style.backgroundColor = `#${titleBgColor} !important`;
+            }
+        });
+
+        clone.querySelectorAll('td[data-column-id]').forEach(cell => {
+            const columnId = cell.getAttribute('data-column-id');
+            const rawValue = parseFloat(cell.getAttribute('data-value'));
+            const settings = formatSettings[columnId] || {};
+            const decimals = settings.decimals ?? 2;
+            const formatType = settings.formatType ?? 'number';
+            const currencySymbol = settings.currencySymbol || '$';
+
+            let excelFormat;
+            switch(formatType) {
+                case 'currency':
+                    excelFormat = decimals > 0 
+                        ? `${currencySymbol}#,##0.${'0'.repeat(decimals)}` 
+                        : `${currencySymbol}#,##0`;
+                    break;
+                case 'percentage':
+                    excelFormat = decimals > 0 
+                        ? `0.${'0'.repeat(decimals)}%` 
+                        : `0%`;
+                    break;
+                default:
+                    excelFormat = decimals > 0 
+                        ? `#,##0.${'0'.repeat(decimals)}` 
+                        : `#,##0`;
+            }
+
+            cell.textContent = rawValue;
+            const existingStyle = cell.getAttribute('style') || '';
+            cell.setAttribute('style', existingStyle + `mso-number-format:"${excelFormat}";`);
+        });
+
+        const html = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" 
+              xmlns:x="urn:schemas-microsoft-com:office:excel"
+              xmlns="http://www.w3.org/TR/REC-html40">
+            <head>
+                <meta charset="UTF-8">
+                <!--[if gte mso 9]>
+                <xml>
+                    <x:ExcelWorkbook>
+                        <x:ExcelWorksheets>
+                            <x:ExcelWorksheet>
+                                <x:Name>Pivot Data</x:Name>
+                                <x:WorksheetOptions>
+                                    <x:DisplayGridlines/>
+                                    <x:DefaultRowHeight>300</x:DefaultRowHeight>
+                                    <x:VerticalAlignmentCenter/>
+                                </x:WorksheetOptions>
+                            </x:ExcelWorksheet>
+                        </x:ExcelWorksheets>
+                    </x:ExcelWorkbook>
+                </xml>
+                <![endif]-->
+            </head>
+            <body>${clone.outerHTML}</body>
+        </html>`;
+
+        const blob = new Blob([html], {type: 'application/vnd.ms-excel'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${worksheetName}.xls`; // This is the changed line
+        a.click();
+        URL.revokeObjectURL(url);
+
+    } catch(error) {
+        console.error('Export error:', error);
+        alert('Export failed: ' + error.message);
+    }
+}
+
+    async function saveConfiguration() {
+        const config = {
+            version: 7,
+            groupColumns: getConfig('group'),
+            pivotColumns: getConfig('pivot'),
+            valueColumns: getConfig('value'),
+            formatSettings: JSON.parse(JSON.stringify(formatSettings)),
+            fieldRenames: fieldRenames,
+            headerFormatSettings: headerFormatSettings,
+            headerRowsCount: headerRowsCount,
+            headerRowSettings: headerRowSettings,
+            tableTitle: tableTitle,
+            titleColumn: document.getElementById('title-column').value,
+            titleFontColor: titleFontColor,
+            titleBgColor: titleBgColor,
+            titleAlignment: titleAlignment,
+            showRowTotals: document.getElementById('show-row-totals').checked,
+            showColumnTotals: document.getElementById('show-column-totals').checked,
+            showSubtotals: document.getElementById('show-subtotals').checked,
+        selectedSubtotalLevels: Array.from(document.getElementById('subtotal-level-select').selectedOptions)
+                                  .map(opt => opt.value)
+        };
+
+        tableau.extensions.settings.set('config', JSON.stringify(config));
+        await tableau.extensions.settings.saveAsync();
+    }
+
+    async function loadConfiguration() {
+        const savedConfig = tableau.extensions.settings.get('config');
+        if (!savedConfig) return null;
+
+        try {
+            const config = JSON.parse(savedConfig);
+            formatSettings = config.formatSettings || {};
+            
+            ['group', 'pivot', 'value'].forEach(type => {
+                const columns = config[`${type}Columns`];
+                const list = document.getElementById(`${type}-columns`);
+                list.innerHTML = '';
+                
+                columns.forEach(col => {
+                    const item = document.createElement('div');
+                    item.className = 'sortable-item';
+                    item.dataset.id = col.id;
+                    item.innerHTML = `
+                        <span>${col.name}</span>
+                        <button class="format-btn" onclick="openFormatSettings('${col.id}')">⚙️</button>
+                        <button class="remove-btn" onclick="removeFromSection('${type}', '${col.id}')">×</button>
+                    `;
+                    list.appendChild(item);
+                });
+            });
+
+            fieldRenames = config.fieldRenames || {};
+            headerFormatSettings = config.headerFormatSettings || {
+                rowGroups: { fontColor: '000000', bgColor: 'F1F3F5', textAlign: 'left' },
+                columnGroups: { fontColor: '000000', bgColor: 'E9ECEF', textAlign: 'center' },
+                totals: { fontColor: '000000', bgColor: 'E9ECEF', textAlign: 'right' }
+            };
+
+            // With:
+            const defaultHeaderFormatSettings = {
+                rowGroups: { fontColor: '000000', bgColor: 'F1F3F5', textAlign: 'left' },
+                columnGroups: { fontColor: '000000', bgColor: 'E9ECEF', textAlign: 'center' },
+                totals: { fontColor: '000000', bgColor: 'E9ECEF', textAlign: 'right' }
+            };
+
+            headerFormatSettings = {
+            rowGroups: config.headerFormatSettings?.rowGroups || defaultHeaderFormatSettings.rowGroups,
+            columnGroups: config.headerFormatSettings?.columnGroups || defaultHeaderFormatSettings.columnGroups,
+            totals: config.headerFormatSettings?.totals || defaultHeaderFormatSettings.totals,
+            subtotals: config.headerFormatSettings?.subtotals || defaultHeaderFormatSettings.subtotals
+        };
+            headerRowsCount = config.headerRowsCount || 0;
+            headerRowSettings = config.headerRowSettings || [];
+            document.getElementById('header-rows-count').value = headerRowsCount;
+
+            document.getElementById('show-row-totals').checked = config.showRowTotals || false;
+            document.getElementById('show-column-totals').checked = config.showColumnTotals || false;
+
+            if (config.titleColumn) {
+                document.getElementById('title-column').value = config.titleColumn;
+                tableTitle = titleColumnMap[config.titleColumn] || '';
+            } else {
+                tableTitle = config.tableTitle || '';
+                document.getElementById('table-title').value = tableTitle;
+            }
+            
+            titleFontColor = config.titleFontColor || '000000';
+            titleBgColor = config.titleBgColor || 'F8F9FA';
+            titleAlignment = config.titleAlignment || 'center';
+            
+            document.getElementById('title-font-color').value = titleFontColor;
+            document.getElementById('title-bg-color').value = titleBgColor;
+            document.getElementById('title-alignment').value = titleAlignment;
+
+            document.getElementById('show-subtotals').checked = config.showSubtotals || false;
+        
+        const subtotalSelect = document.getElementById('subtotal-level-select');
+        if (config.selectedSubtotalLevels) {
+            Array.from(subtotalSelect.options).forEach(option => {
+                option.selected = config.selectedSubtotalLevels.includes(option.value);
+            });
+        }
+            
+            return config;
+        } catch(error) {
+            console.error('Error loading configuration:', error);
+            return null;
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        try {
+            await tableau.extensions.initializeAsync();
+            const worksheet = tableau.extensions.dashboardContent.dashboard.worksheets[0];
+            const data = await worksheet.getSummaryDataAsync();
+            
+            columns = data.columns.map(col => ({
+                id: col.fieldName,
+                name: col.fieldName
+                    .replace(/^\[.*?\]\.?/g, '')
+                    .replace(/(SUM|AVG|COUNT)\(/gi, '')
+                    .replace(/[^a-zA-Z0-9 ]/g, ' ')
+                    .trim()
+            }));
+
+            allData = data.data.map(row => {
+                const obj = {};
+                data.columns.forEach((col, index) => {
+                    obj[col.fieldName] = row[index].value;
+                });
+                return obj;
+            });
+
+            const titleSelect = document.getElementById('title-column');
+            const headerRowColumnSelect = document.getElementById('header-row-column');
+            titleSelect.innerHTML = '<option value="">Select column for title</option>'; // Changed to titleSelect
+            headerRowColumnSelect.innerHTML = '<option value="">Select column</option>';
+
+            columns.forEach(col => {
+                // Add to both selects
+                const titleOption = document.createElement('option');
+                titleOption.value = col.id;
+                titleOption.textContent = col.name;
+                titleSelect.appendChild(titleOption); // Added to title select
+
+                const headerOption = document.createElement('option');
+                headerOption.value = col.id;
+                headerOption.textContent = col.name;
+                headerRowColumnSelect.appendChild(headerOption);
+            });
+
+            const availableSelect = document.getElementById('available-columns');
+            availableSelect.innerHTML = '';
+            columns.forEach(col => {
+                const option = document.createElement('option');
+                option.value = col.id;
+                option.textContent = col.name;
+                availableSelect.appendChild(option);
+            });
+
+            allData.forEach(row => {
+                columns.forEach(col => {
+                    if (!titleColumnMap[col.id] && row[col.id]) {
+                        titleColumnMap[col.id] = row[col.id];
+                    }
+                });
+            });
+
+            const savedConfig = await loadConfiguration();
+            if (savedConfig) {
+                if (savedConfig.titleColumn) {
+                    document.getElementById('title-column').value = savedConfig.titleColumn;
+                    tableTitle = titleColumnMap[savedConfig.titleColumn] || '';
+                } else {
+                    tableTitle = savedConfig.tableTitle || '';
+                    document.getElementById('table-title').value = tableTitle;
+                }
+                titleFontColor = savedConfig.titleFontColor || '000000';
+                titleBgColor = savedConfig.titleBgColor || 'F8F9FA';
+                titleAlignment = savedConfig.titleAlignment || 'center';
+                document.getElementById('title-font-color').value = titleFontColor;
+                document.getElementById('title-bg-color').value = titleBgColor;
+                document.getElementById('title-alignment').value = titleAlignment;
+            }
+
+            document.getElementById('table-title').addEventListener('input', function() {
+                document.getElementById('title-column').value = '';
+                tableTitle = this.value;
+                saveConfiguration();
+            });
+
+            document.getElementById('title-column').addEventListener('change', function() {
+                document.getElementById('table-title').value = '';
+                tableTitle = titleColumnMap[this.value] || '';
+                saveConfiguration();
+            });
+
+            document.getElementById('title-font-color').addEventListener('input', function() {
+                titleFontColor = this.value.replace(/#/g, '');
+                generatePivotTable();
+                saveConfiguration();
+            });
+
+            document.getElementById('title-bg-color').addEventListener('input', function() {
+                titleBgColor = this.value.replace(/#/g, '');
+                generatePivotTable();
+                saveConfiguration();
+            });
+
+            document.getElementById('title-alignment').addEventListener('change', function() {
+                titleAlignment = this.value;
+                generatePivotTable();
+                saveConfiguration();
+            });
+
+            document.getElementById('format-type').addEventListener('change', function() {
+                document.getElementById('currency-symbol-container').style.display = 
+                    this.value === 'currency' ? 'flex' : 'none';
+            });
+
+            initSortables();
+            document.getElementById('generate-btn').addEventListener('click', generatePivotTable);
+            document.getElementById('export-btn').addEventListener('click', exportExcel);
+            document.getElementById('save-btn').addEventListener('click', async () => {
+                await saveConfiguration();
+                alert('Configuration saved successfully!');
+            });
+
+            generatePivotTable();
+
+        } catch(error) {
+            console.error('Initialization error:', error);
+            alert('Initialization failed: ' + error.message);
+        }
+    });
+    </script>
+</body>
+</html>
