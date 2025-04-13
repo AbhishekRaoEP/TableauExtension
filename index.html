@@ -12,342 +12,595 @@
               img-src 'self' data:;">
 
     
+    <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Pivot Table Generator</title>
     <style>
-        body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-}
-        #config-panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid #808080; }
-        .config-section { margin-bottom: 20px; border: 1px solid #808080; padding: 15px; border-radius: 8px; background: #fff; }
-        .columns-select { width: 100%; height: 120px; margin: 10px 0; border: 1px solid #808080; }
-        button { background: #4CAF50; color: white; padding: 8px 16px; border: 1px solid #808080; border-radius: 4px; cursor: pointer; margin: 5px; }
-        button:hover { background: #45a049; }
-        .sortable-list { min-height: 40px; border: 1px solid #808080; padding: 10px; margin: 10px 0; background: #fff; }
-        .sortable-item { display: flex; align-items: center; padding: 8px; margin: 4px 0; background: #f8f9fa; border: 1px solid #808080; cursor: move; }
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; background: white; border: 2px solid #808080; }
-        th, td { border: 1px solid #808080; padding: 10px; vertical-align: middle; }
-        .group-header { background: #f1f3f5; }
-        .table-title { vertical-align: middle !important; }
-        .header-rows-control { margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
-        .format-settings { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.2); z-index: 1000; border: 2px solid #808080; }
-        .format-tabs { display: flex; margin-bottom: 15px; }
-        .format-tab { padding: 10px; cursor: pointer; border-bottom: 2px solid transparent; }
-        .format-tab.active { border-color: #4CAF50; }
-        .format-content { display: none; }
-        .format-content.active { display: block; }
-        .color-picker, .alignment-control { display: flex; align-items: center; margin: 10px 0; gap: 10px; }
-        .condition-row { display: flex; align-items: center; margin: 10px 0; }
-        .condition-row select { width: auto; margin: 0 10px; border: 1px solid #808080; }
-        .title-section { margin-bottom: 20px; }
-        .title-section input, .title-section select { width: 300px; padding: 8px; margin: 5px; border: 1px solid #808080; }
-        .save-config { background: #2196F3 !important; }
-        .save-config:hover { background: #1976D2 !important; }
-        .title-color-controls { margin-top: 10px; display: flex; gap: 15px; flex-wrap: wrap; }
-        .title-color-picker { display: flex; align-items: center; gap: 5px; }
-        .merged-header { text-align: center !important; vertical-align: middle !important; }
-        .remove-btn { background: #ff4444 !important; margin-left: 5px; padding: 2px 8px !important; }
-        .remove-btn:hover { background: #cc0000 !important; }
-        .grand-total { background-color: #e9ecef !important; font-weight: bold; }
-        .rename-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.2); z-index: 1000; width: 400px; max-height: 80vh; overflow-y: auto; border: 2px solid #808080; }
-        .rename-field { display: flex; align-items: center; margin: 10px 0; }
-        .rename-field label { width: 120px; margin-right: 10px; overflow: hidden; text-overflow: ellipsis; }
-        .rename-field input { flex: 1; padding: 6px; }
-        select { padding: 5px; border-radius: 4px; border: 1px solid #808080; }
-        .subtotal-row {
-                background-color: #f8f9fa !important;
-                border-top: 2px solid #dee2e6 !important;
-            }
+      /* CSS Variables for theme */
+      :root {
+        --primary-color: #4caf50;
+        --primary-hover: #43a047;
+        --secondary-color: #2196f3;
+        --secondary-hover: #1976d2;
+        --accent-color: #e53935;
+        --accent-hover: #c62828;
+        --text-color: #333;
+        --background: #f5f7fa;
+        --white: #fff;
+        --light-bg: #f8f9fa;
+        --border-color: #ccc;
+        --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.05);
+        --shadow-medium: 0 6px 18px rgba(0, 0, 0, 0.06);
+        --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.15);
+        --transition-speed: 0.3s;
+      }
 
-            .subtotal-row td {
-                font-weight: 600 !important;
-            }
+      /* Basic Reset */
+      * {
+        box-sizing: border-box;
+      }
 
-            .subtotal {
-                background-color: #e9ecef !important;
-            }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", Roboto, sans-serif;
+        background: var(--background);
+        color: var(--text-color);
+      }
 
-            .subtotal-row td.grand-total {
-  background-color: inherit !important;
-  font-weight: bold !important;
-}
+      /* Main Menu */
+      #main-menu {
+        padding: 60px 20px;
+        text-align: center;
+        background: var(--white);
+        box-shadow: var(--shadow-light);
+        margin-bottom: 40px;
+      }
+
+      #main-menu h2 {
+        font-size: 2rem;
+        margin-bottom: 20px;
+        color: #2c3e50;
+      }
+
+      /* Button styles */
+      button {
+        padding: 12px 24px;
+        margin: 10px;
+        font-size: 1rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background var(--transition-speed);
+        color: var(--white);
+        background: var(--primary-color);
+      }
+
+      button:hover {
+        background: var(--primary-hover);
+      }
+
+      .btn-secondary {
+        background: #777;
+      }
+
+      .btn-secondary:hover {
+        background: #666;
+      }
+
+      .btn-save {
+        background: var(--secondary-color);
+      }
+
+      .btn-save:hover {
+        background: var(--secondary-hover);
+      }
+
+      .btn-remove {
+        background: var(--accent-color);
+        padding: 4px 10px;
+      }
+
+      .btn-remove:hover {
+        background: var(--accent-hover);
+      }
+
+      .button-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      /* Config Panel */
+      #config-wrapper {
+        max-width: 1000px;
+        margin: auto;
+        display: none;
+      }
+
+      #config-panel {
+        background: var(--white);
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: var(--shadow-medium);
+        border: 1px solid #e0e0e0;
+      }
+
+      .config-section {
+        background: #fafbfc;
+        border: 1px solid #dcdfe3;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+      }
+
+      .config-section h3 {
+        margin-top: 0;
+        font-size: 1.1rem;
+        color: #2c3e50;
+      }
+
+      /* Form Elements */
+      input[type="text"],
+      input[type="number"],
+      select {
+        width: 100%;
+        padding: 10px;
+        font-size: 0.95rem;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        margin: 8px 0 12px 0;
+        background: var(--white);
+        transition: border 0.2s;
+      }
+
+      input:focus,
+      select:focus {
+        border-color: var(--primary-color);
+        outline: none;
+      }
+
+      .columns-select {
+        height: auto;
+      }
+
+      .sortable-list {
+        min-height: 50px;
+        background: var(--white);
+        border: 1px solid var(--border-color);
+        padding: 10px;
+        border-radius: 6px;
+      }
+
+      .sortable-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f1f3f5;
+        border: 1px solid var(--border-color);
+        padding: 10px;
+        margin-bottom: 6px;
+        border-radius: 6px;
+        cursor: move;
+      }
+
+      .header-rows-control,
+      .alignment-control,
+      .color-picker,
+      .title-color-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-top: 10px;
+      }
+
+      /* Tabs */
+      .format-tabs {
+        display: flex;
+        border-bottom: 1px solid #e0e0e0;
+        margin-bottom: 15px;
+      }
+
+      .format-tab {
+        padding: 10px 16px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        font-weight: 500;
+      }
+
+      .format-tab.active {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+      }
+
+      /* Modals and Format Settings */
+      .format-settings,
+      .rename-modal {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--white);
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: var(--shadow-modal);
+        z-index: 1000;
+        width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+      }
+
+      /* Table Styles */
+      .table-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        text-align: center;
+        background: var(--light-bg);
+        padding: 12px;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 30px;
+        background: var(--white);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      }
+
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border: 1px solid var(--border-color);
+      }
+
+      /* Specific Row Styles */
+      .grand-total {
+        background-color: #eef1f5;
+        font-weight: bold;
+      }
+
+      .subtotal-row {
+        background-color: #f8f9fa;
+        border-top: 2px solid #dee2e6;
+      }
+
+      .subtotal-row td {
+        font-weight: 600;
+      }
+
+      /* Rename Fields */
+      .rename-field {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 10px 0;
+      }
+
+      .rename-field label {
+        flex: 0 0 120px;
+        font-weight: 500;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+
+      .rename-field input {
+        flex: 1;
+        padding: 8px;
+      }
     </style>
-</head>
-<body>
-    <div id="config-panel">
+  </head>
+  <body>
+    <!-- Main Menu -->
+    <div id="main-menu">
+      <h2>Pivot Table Extension</h2>
+      <button onclick="handleExport()">Export to Excel</button>
+      <button onclick="openConfig()">Configure</button>
+    </div>
+
+    <!-- Configuration Wrapper -->
+    <div id="config-wrapper">
+      <div id="config-panel">
+        <div style="text-align: right; margin-bottom: 10px;">
+          <button onclick="backToMain()" class="btn-secondary">← Back</button>
+        </div>
+
+        <!-- Header Rows Section -->
         <div class="config-section">
-            <h3>Header Rows</h3>
-            <div class="header-rows-control">
-                <label>Number of Header Rows:</label>
-                <input type="number" id="header-rows-count" min="0" value="0" style="width: 60px;">
-                <button onclick="applyHeaderRows()">Apply</button>
-            </div>
+          <h3>Header Rows</h3>
+          <div class="header-rows-control">
+            <label>Number of Header Rows:</label>
+            <input type="number" id="header-rows-count" min="0" value="0" style="width: 60px;" />
+            <button onclick="applyHeaderRows()">Apply</button>
+          </div>
         </div>
 
+        <!-- Table Title Section -->
         <div class="config-section title-section">
-            <h3>Table Title</h3>
-            <input type="text" id="table-title" placeholder="Enter custom title">
-            <span>OR</span>
-            <select id="title-column">
-                <option value="">Select column for title</option>
-            </select>
-            <div class="title-color-controls">
-                <div class="alignment-control">
-                    <label>Title Alignment:</label>
-                    <select id="title-alignment">
-                        <option value="left">Left</option>
-                        <option value="center">Center</option>
-                        <option value="right">Right</option>
-                    </select>
-                </div>
-                <div class="title-color-picker">
-                    <label>Title Color:</label>
-                    <input class="jscolor" id="title-font-color" value="000000">
-                </div>
-                <div class="title-color-picker">
-                    <label>Title Background:</label>
-                    <input class="jscolor" id="title-bg-color" value="F8F9FA">
-                </div>
+          <h3>Table Title</h3>
+          <input type="text" id="table-title" placeholder="Enter custom title" />
+          <span>OR</span>
+          <select id="title-column">
+            <option value="">Select column for title</option>
+          </select>
+          <div class="title-color-controls">
+            <div class="alignment-control">
+              <label>Title Alignment:</label>
+              <select id="title-alignment">
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
             </div>
+            <div class="color-picker">
+              <label>Title Color:</label>
+              <input class="jscolor" id="title-font-color" value="000000" />
+            </div>
+            <div class="color-picker">
+              <label>Title Background:</label>
+              <input class="jscolor" id="title-bg-color" value="F8F9FA" />
+            </div>
+          </div>
         </div>
 
+        <!-- Format Tab for Subtotals -->
         <div class="format-tab" onclick="showHeaderFormatTab('subtotals')">Subtotals</div>
 
+        <!-- Available Columns Section -->
         <div class="config-section">
-            <h3>Available Columns</h3>
-            <select id="available-columns" class="columns-select" multiple></select>
-            <div class="button-group">
-                <button onclick="addToSection('group')">Add to Rows</button>
-                <button onclick="addToSection('pivot')">Add to Columns</button>
-                <button onclick="addToSection('value')">Add to Values</button>
-            </div>
-        </div>
-
-        <div class="config-section">
-            <h3>Subtotal Levels</h3>
-            <select id="subtotal-level-select" multiple style="width: 100%; height: 80px;">
-              <!-- The options could be dynamically generated based on the number of group columns -->
-              <option value="0">Group Level 1</option>
-              <option value="1">Group Level 2</option>
-              <option value="2">Group Level 3</option>
-            </select>
-            <p>Select one or more group levels to show subtotals.</p>
+          <h3>Available Columns</h3>
+          <select id="available-columns" class="columns-select" multiple></select>
+          <div class="button-group">
+            <button onclick="addToSection('group')">Add to Rows</button>
+            <button onclick="addToSection('pivot')">Add to Columns</button>
+            <button onclick="addToSection('value')">Add to Values</button>
           </div>
-
-        <div class="config-section">
-            <h3>Totals</h3>
-            <label><input type="checkbox" id="show-subtotals"> Row Subtotals</label>
-            <label><input type="checkbox" id="show-row-totals"> Row Grand Totals</label>
-            <label><input type="checkbox" id="show-column-totals"> Column Grand Totals</label>
         </div>
 
+        <!-- Subtotal Levels Section -->
         <div class="config-section">
-            <h3>Row Groups</h3>
-            <div id="group-columns" class="sortable-list"></div>
+          <h3>Subtotal Levels</h3>
+          <select id="subtotal-level-select" multiple style="width: 100%; height: 80px;">
+            <!-- Options dynamically generated -->
+            <option value="0">Group Level 1</option>
+            <option value="1">Group Level 2</option>
+            <option value="2">Group Level 3</option>
+          </select>
+          <p>Select one or more group levels to show subtotals.</p>
         </div>
 
+        <!-- Totals Section -->
         <div class="config-section">
-            <h3>Column Groups</h3>
-            <div id="pivot-columns" class="sortable-list"></div>
+          <h3>Totals</h3>
+          <label><input type="checkbox" id="show-subtotals" /> Row Subtotals</label>
+          <label><input type="checkbox" id="show-row-totals" /> Row Grand Totals</label>
+          <label
+            ><input type="checkbox" id="show-column-totals" /> Column Grand Totals</label
+          >
         </div>
 
+        <!-- Row Groups -->
         <div class="config-section">
-            <h3>Values</h3>
-            <div id="value-columns" class="sortable-list"></div>
+          <h3>Row Groups</h3>
+          <div id="group-columns" class="sortable-list"></div>
         </div>
 
+        <!-- Column Groups -->
+        <div class="config-section">
+          <h3>Column Groups</h3>
+          <div id="pivot-columns" class="sortable-list"></div>
+        </div>
+
+        <!-- Values Section -->
+        <div class="config-section">
+          <h3>Values</h3>
+          <div id="value-columns" class="sortable-list"></div>
+        </div>
+
+        <!-- Action Buttons -->
         <div class="button-group">
-            <button onclick="showRenameModal()">Rename Fields</button>
-            <button onclick="showHeaderFormatModal()">Format Headers</button>
-            <button id="generate-btn">Generate Pivot Table</button>
-            <button id="export-btn">Export to Excel</button>
-            <button id="save-btn" class="save-config">Save Configuration</button>
+          <button onclick="showRenameModal()">Rename Fields</button>
+          <button onclick="showHeaderFormatModal()">Format Headers</button>
+          <button id="generate-btn">Generate Pivot Table</button>
+          <button id="export-btn">Export to Excel</button>
+          <button id="save-btn" class="btn-save">Save Configuration</button>
         </div>
-    </div>
-    <div id="data-container"></div>
+      </div>
 
-    <div id="format-settings" class="format-settings">
+      <!-- Data Container -->
+      <div id="data-container"></div>
+
+      <!-- Format Settings Modal -->
+      <div id="format-settings" class="format-settings">
         <div class="format-tabs">
-            <div class="format-tab active" onclick="showFormatTab('basic')">Basic</div>
-            <div class="format-tab" onclick="showFormatTab('conditional')">Conditional</div>
-            <div style="flex:1"></div>
-            <button onclick="closeFormatSettings()">×</button>
+          <div class="format-tab active" onclick="showFormatTab('basic')">Basic</div>
+          <div class="format-tab" onclick="showFormatTab('conditional')">Conditional</div>
+          <div style="flex: 1;"></div>
+          <button onclick="closeFormatSettings()">×</button>
         </div>
-        
         <div id="basic-format" class="format-content active">
-            <div class="color-picker">
-                <label>Number Format:</label>
-                <select id="format-type">
-                    <option value="number">Number</option>
-                    <option value="currency">Currency</option>
-                    <option value="percentage">Percentage</option>
-                </select>
-            </div>
-            <div class="color-picker" id="currency-symbol-container" style="display: none;">
-                <label>Currency Symbol:</label>
-                <input type="text" id="currency-symbol" class="currency-symbol-input" value="$" maxlength="3">
-            </div>
-            <div class="color-picker">
-                <label>Decimal Places:</label>
-                <input type="number" id="decimals" min="0" max="4" value="2">
-            </div>
-            <div class="color-picker">
-                <label>Font Color:</label>
-                <input class="jscolor" id="font-color" value="000000">
-            </div>
-            <div class="color-picker">
-                <label>Background Color:</label>
-                <input class="jscolor" id="bg-color" value="FFFFFF">
-            </div>
+          <div class="color-picker">
+            <label>Number Format:</label>
+            <select id="format-type">
+              <option value="number">Number</option>
+              <option value="currency">Currency</option>
+              <option value="percentage">Percentage</option>
+            </select>
+          </div>
+          <div class="color-picker" id="currency-symbol-container" style="display: none;">
+            <label>Currency Symbol:</label>
+            <input type="text" id="currency-symbol" value="$" maxlength="3" />
+          </div>
+          <div class="color-picker">
+            <label>Decimal Places:</label>
+            <input type="number" id="decimals" min="0" max="4" value="2" />
+          </div>
+          <div class="color-picker">
+            <label>Font Color:</label>
+            <input class="jscolor" id="font-color" value="000000" />
+          </div>
+          <div class="color-picker">
+            <label>Background Color:</label>
+            <input class="jscolor" id="bg-color" value="FFFFFF" />
+          </div>
         </div>
-
         <div id="conditional-format" class="format-content">
-            <div id="conditions-container"></div>
-            <button onclick="addNewCondition()">+ Add Condition</button>
+          <div id="conditions-container"></div>
+          <button onclick="addNewCondition()">+ Add Condition</button>
         </div>
-
         <div style="margin-top: 20px;">
-            <button onclick="saveFormatSettings()">Save</button>
-            <button onclick="closeFormatSettings()">Cancel</button>
+          <button onclick="saveFormatSettings()">Save</button>
+          <button onclick="closeFormatSettings()">Cancel</button>
         </div>
-    </div>
+      </div>
 
-    <div id="rename-modal" class="rename-modal">
+      <!-- Rename Modal -->
+      <div id="rename-modal" class="rename-modal">
         <h3>Rename Fields</h3>
         <div id="rename-fields-list"></div>
         <div style="margin-top: 20px;">
-            <button onclick="saveRenames()">Save Changes</button>
-            <button onclick="closeRenameModal()">Cancel</button>
+          <button onclick="saveRenames()">Save Changes</button>
+          <button onclick="closeRenameModal()">Cancel</button>
         </div>
-    </div>
+      </div>
 
-    <div id="header-format-modal" class="format-settings">
+      <!-- Header Format Modal -->
+      <div id="header-format-modal" class="format-settings">
         <div class="format-tabs">
-            <div class="format-tab active" onclick="showHeaderFormatTab('row-groups')">Row Groups</div>
-            <div class="format-tab" onclick="showHeaderFormatTab('column-groups')">Column Groups</div>
-            <div class="format-tab" onclick="showHeaderFormatTab('totals')">Totals</div>
-            <div class="format-tab" onclick="showHeaderFormatTab('subtotals')">Subtotals</div> <!-- Moved here -->
-            <div style="flex:1"></div>
-            <button onclick="closeHeaderFormatModal()">×</button>
+          <div class="format-tab active" onclick="showHeaderFormatTab('row-groups')">Row Groups</div>
+          <div class="format-tab" onclick="showHeaderFormatTab('column-groups')">Column Groups</div>
+          <div class="format-tab" onclick="showHeaderFormatTab('totals')">Totals</div>
+          <div class="format-tab" onclick="showHeaderFormatTab('subtotals')">Subtotals</div>
+          <div style="flex:1;"></div>
+          <button onclick="closeHeaderFormatModal()">×</button>
         </div>
-
         <div id="subtotals-format" class="format-content">
-            <div class="color-picker">
-                <label>Font Color:</label>
-                <input class="jscolor" id="subtotals-font-color" value="000000">
-            </div>
-            <div class="color-picker">
-                <label>Background Color:</label>
-                <input class="jscolor" id="subtotals-bg-color" value="F8F9FA">
-            </div>
-            <div class="alignment-control">
-                <label>Text Alignment:</label>
-                <select id="subtotals-alignment">
-                    <option value="left">Left</option>
-                    <option value="center">Center</option>
-                    <option value="right">Right</option>
-                </select>
-            </div>
+          <div class="color-picker">
+            <label>Font Color:</label>
+            <input class="jscolor" id="subtotals-font-color" value="000000" />
+          </div>
+          <div class="color-picker">
+            <label>Background Color:</label>
+            <input class="jscolor" id="subtotals-bg-color" value="F8F9FA" />
+          </div>
+          <div class="alignment-control">
+            <label>Text Alignment:</label>
+            <select id="subtotals-alignment">
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
         </div>
-        
         <div id="row-groups-format" class="format-content active">
-            <div class="color-picker">
-                <label>Font Color:</label>
-                <input class="jscolor" id="row-group-font-color" value="000000">
-            </div>
-            <div class="color-picker">
-                <label>Background Color:</label>
-                <input class="jscolor" id="row-group-bg-color" value="F1F3F5">
-            </div>
-            <div class="alignment-control">
-                <label>Text Alignment:</label>
-                <select id="row-group-alignment">
-                    <option value="left">Left</option>
-                    <option value="center">Center</option>
-                    <option value="right">Right</option>
-                </select>
-            </div>
+          <div class="color-picker">
+            <label>Font Color:</label>
+            <input class="jscolor" id="row-group-font-color" value="000000" />
+          </div>
+          <div class="color-picker">
+            <label>Background Color:</label>
+            <input class="jscolor" id="row-group-bg-color" value="F1F3F5" />
+          </div>
+          <div class="alignment-control">
+            <label>Text Alignment:</label>
+            <select id="row-group-alignment">
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
         </div>
-
         <div id="column-groups-format" class="format-content">
-            <div class="color-picker">
-                <label>Font Color:</label>
-                <input class="jscolor" id="column-group-font-color" value="000000">
-            </div>
-            <div class="color-picker">
-                <label>Background Color:</label>
-                <input class="jscolor" id="column-group-bg-color" value="E9ECEF">
-            </div>
-            <div class="alignment-control">
-                <label>Text Alignment:</label>
-                <select id="column-group-alignment">
-                    <option value="left">Left</option>
-                    <option value="center">Center</option>
-                    <option value="right">Right</option>
-                </select>
-            </div>
+          <div class="color-picker">
+            <label>Font Color:</label>
+            <input class="jscolor" id="column-group-font-color" value="000000" />
+          </div>
+          <div class="color-picker">
+            <label>Background Color:</label>
+            <input class="jscolor" id="column-group-bg-color" value="E9ECEF" />
+          </div>
+          <div class="alignment-control">
+            <label>Text Alignment:</label>
+            <select id="column-group-alignment">
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
         </div>
-
         <div id="totals-format" class="format-content">
-            <div class="color-picker">
-                <label>Font Color:</label>
-                <input class="jscolor" id="totals-font-color" value="000000">
-            </div>
-            <div class="color-picker">
-                <label>Background Color:</label>
-                <input class="jscolor" id="totals-bg-color" value="E9ECEF">
-            </div>
-            <div class="alignment-control">
-                <label>Text Alignment:</label>
-                <select id="totals-alignment">
-                    <option value="left">Left</option>
-                    <option value="center">Center</option>
-                    <option value="right">Right</option>
-                </select>
-            </div>
+          <div class="color-picker">
+            <label>Font Color:</label>
+            <input class="jscolor" id="totals-font-color" value="000000" />
+          </div>
+          <div class="color-picker">
+            <label>Background Color:</label>
+            <input class="jscolor" id="totals-bg-color" value="E9ECEF" />
+          </div>
+          <div class="alignment-control">
+            <label>Text Alignment:</label>
+            <select id="totals-alignment">
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
         </div>
-
         <div style="margin-top: 20px;">
-            <button onclick="saveHeaderFormatSettings()">Save</button>
-            <button onclick="closeHeaderFormatModal()">Cancel</button>
+          <button onclick="saveHeaderFormatSettings()">Save</button>
+          <button onclick="closeHeaderFormatModal()">Cancel</button>
         </div>
-    </div>
+      </div>
 
-    <div id="header-row-modal" class="format-settings">
+      <!-- Header Row Modal -->
+      <div id="header-row-modal" class="format-settings">
         <h3>Header Row Configuration</h3>
         <div class="header-row-config">
-            <input type="hidden" id="current-header-row-index" value="-1">
-            <div class="title-section">
-                <label>Header Text:</label>
-                <input type="text" id="header-row-text" placeholder="Enter header text">
-                <span>OR</span>
-                <select id="header-row-column">
-                    <option value="">Select column for header</option>
-                </select>
+          <input type="hidden" id="current-header-row-index" value="-1" />
+          <div class="title-section">
+            <label>Header Text:</label>
+            <input type="text" id="header-row-text" placeholder="Enter header text" />
+            <span>OR</span>
+            <select id="header-row-column">
+              <option value="">Select column for header</option>
+            </select>
+          </div>
+          <div class="title-color-controls">
+            <div class="alignment-control">
+              <label>Text Alignment:</label>
+              <select id="header-row-alignment">
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
             </div>
-            <div class="title-color-controls">
-                <div class="alignment-control">
-                    <label>Text Alignment:</label>
-                    <select id="header-row-alignment">
-                        <option value="left">Left</option>
-                        <option value="center">Center</option>
-                        <option value="right">Right</option>
-                    </select>
-                </div>
-                <div class="title-color-picker">
-                    <label>Font Color:</label>
-                    <input class="jscolor" id="header-row-font-color" value="000000">
-                </div>
-                <div class="title-color-picker">
-                    <label>Background Color:</label>
-                    <input class="jscolor" id="header-row-bg-color" value="F8F9FA">
-                </div>
+            <div class="color-picker">
+              <label>Font Color:</label>
+              <input class="jscolor" id="header-row-font-color" value="000000" />
             </div>
-            <div style="margin-top: 20px;">
-                <button onclick="saveHeaderRowConfig()">Save</button>
-                <button onclick="closeHeaderRowModal()">Cancel</button>
+            <div class="color-picker">
+              <label>Background Color:</label>
+              <input class="jscolor" id="header-row-bg-color" value="F8F9FA" />
             </div>
+          </div>
+          <div style="margin-top: 20px;">
+            <button onclick="saveHeaderRowConfig()">Save</button>
+            <button onclick="closeHeaderRowModal()">Cancel</button>
+          </div>
         </div>
+      </div>
     </div>
+  </body>
+</html>
 
     <script>
     let allData = [];
