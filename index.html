@@ -73,6 +73,13 @@
     </style>
 </head>
 <body>
+    <div id="main-menu" style="text-align:center; padding: 50px;">
+        <h2>Pivot Table Extension</h2>
+        <button onclick="handleExport()">Export to Excel</button>
+        <button onclick="openConfig()">Configure</button>
+    </div>
+
+    <div id="config-wrapper" style="display:none;">
     <div id="config-panel">
         <div class="config-section">
             <h3>Header Rows</h3>
@@ -348,6 +355,8 @@
             </div>
         </div>
     </div>
+    </div>
+        
 
     <script>
     let allData = [];
@@ -369,6 +378,18 @@
     totals: { fontColor: '000000', bgColor: 'E9ECEF', textAlign: 'right' },
     subtotals: { fontColor: '000000', bgColor: 'E9ECEF', textAlign: 'left' } // Add default subtotals
 };
+
+        function handleExport() {
+    document.getElementById('main-menu').style.display = 'none';
+    exportExcel().finally(() => {
+        document.getElementById('main-menu').style.display = 'block';
+    });
+}
+
+function openConfig() {
+    document.getElementById('main-menu').style.display = 'none';
+    document.getElementById('config-wrapper').style.display = 'block';
+}
 
     function initSortables() {
         ['group', 'pivot', 'value'].forEach(type => {
