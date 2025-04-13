@@ -19,285 +19,119 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Pivot Table Generator</title>
     <style>
-      /* CSS Variables for theme */
-      :root {
-        --primary-color: #4caf50;
-        --primary-hover: #43a047;
-        --secondary-color: #2196f3;
-        --secondary-hover: #1976d2;
-        --accent-color: #e53935;
-        --accent-hover: #c62828;
-        --text-color: #333;
-        --background: #f5f7fa;
-        --white: #fff;
-        --light-bg: #f8f9fa;
-        --border-color: #ccc;
-        --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.05);
-        --shadow-medium: 0 6px 18px rgba(0, 0, 0, 0.06);
-        --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.15);
-        --transition-speed: 0.3s;
-      }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    }
 
-      /* Basic Reset */
-      * {
-        box-sizing: border-box;
-      }
-
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: "Segoe UI", Roboto, sans-serif;
-        background: var(--background);
-        color: var(--text-color);
-      }
-
-      /* Main Menu */
-      #main-menu {
-        padding: 60px 20px;
-        text-align: center;
-        background: var(--white);
-        box-shadow: var(--shadow-light);
-        margin-bottom: 40px;
-      }
-
-      #main-menu h2 {
-        font-size: 2rem;
-        margin-bottom: 20px;
-        color: #2c3e50;
-      }
-
-      /* Button styles */
-      button {
-        padding: 12px 24px;
-        margin: 10px;
-        font-size: 1rem;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: background var(--transition-speed);
-        color: var(--white);
-        background: var(--primary-color);
-      }
-
-      button:hover {
-        background: var(--primary-hover);
-      }
-
-      .btn-secondary {
-        background: #777;
-      }
-
-      .btn-secondary:hover {
-        background: #666;
-      }
-
-      .btn-save {
-        background: var(--secondary-color);
-      }
-
-      .btn-save:hover {
-        background: var(--secondary-hover);
-      }
-
-      .btn-remove {
-        background: var(--accent-color);
-        padding: 4px 10px;
-      }
-
-      .btn-remove:hover {
-        background: var(--accent-hover);
-      }
-
-      .button-group {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 10px;
-      }
-
-      /* Config Panel */
-      #config-wrapper {
-        max-width: 1000px;
-        margin: auto;
-        display: none;
-      }
-
-      #config-panel {
-        background: var(--white);
-        padding: 30px;
-        border-radius: 10px;
-        box-shadow: var(--shadow-medium);
-        border: 1px solid #e0e0e0;
-      }
-
-      .config-section {
-        background: #fafbfc;
-        border: 1px solid #dcdfe3;
+    #config-panel {
+        background: white;
         padding: 20px;
         border-radius: 8px;
-        margin-bottom: 24px;
-      }
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border: 1px solid #cbd5e0;
+    }
 
-      .config-section h3 {
-        margin-top: 0;
-        font-size: 1.1rem;
-        color: #2c3e50;
-      }
+    .config-section {
+        margin-bottom: 20px;
+        border: 1px solid #cbd5e0;
+        padding: 15px;
+        border-radius: 8px;
+        background: #f9fafe;
+    }
 
-      /* Form Elements */
-      input[type="text"],
-      input[type="number"],
-      select {
-        width: 100%;
-        padding: 10px;
-        font-size: 0.95rem;
-        border: 1px solid var(--border-color);
-        border-radius: 6px;
-        margin: 8px 0 12px 0;
-        background: var(--white);
-        transition: border 0.2s;
-      }
+    .columns-select,
+    select,
+    input[type="text"],
+    input[type="number"] {
+        border: 1px solid #cbd5e0;
+    }
 
-      input:focus,
-      select:focus {
-        border-color: var(--primary-color);
-        outline: none;
-      }
-
-      .columns-select {
-        height: auto;
-      }
-
-      .sortable-list {
-        min-height: 50px;
-        background: var(--white);
-        border: 1px solid var(--border-color);
-        padding: 10px;
-        border-radius: 6px;
-      }
-
-      .sortable-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: #f1f3f5;
-        border: 1px solid var(--border-color);
-        padding: 10px;
-        margin-bottom: 6px;
-        border-radius: 6px;
-        cursor: move;
-      }
-
-      .header-rows-control,
-      .alignment-control,
-      .color-picker,
-      .title-color-controls {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 12px;
-        margin-top: 10px;
-      }
-
-      /* Tabs */
-      .format-tabs {
-        display: flex;
-        border-bottom: 1px solid #e0e0e0;
-        margin-bottom: 15px;
-      }
-
-      .format-tab {
-        padding: 10px 16px;
+    button {
+        background: #1861F5;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
         cursor: pointer;
-        border-bottom: 2px solid transparent;
-        font-weight: 500;
-      }
+        margin: 5px;
+        transition: background 0.2s;
+    }
 
-      .format-tab.active {
-        border-color: var(--primary-color);
-        color: var(--primary-color);
-      }
+    button:hover {
+        background: #0f47c6;
+    }
 
-      /* Modals and Format Settings */
-      .format-settings,
-      .rename-modal {
-        display: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: var(--white);
-        padding: 25px;
-        border-radius: 10px;
-        box-shadow: var(--shadow-modal);
-        z-index: 1000;
-        width: 500px;
-        max-height: 90vh;
-        overflow-y: auto;
-        border: 1px solid var(--border-color);
-      }
+    .save-config {
+        background: #1861F5 !important;
+    }
 
-      /* Table Styles */
-      .table-title {
-        font-size: 1.2rem;
-        font-weight: bold;
-        text-align: center;
-        background: var(--light-bg);
-        padding: 12px;
-      }
+    .save-config:hover {
+        background: #0f47c6 !important;
+    }
 
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        margin-top: 30px;
-        background: var(--white);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-      }
+    .remove-btn {
+        background: #dc3545 !important;
+    }
 
-      th,
-      td {
-        padding: 12px;
-        text-align: left;
-        border: 1px solid var(--border-color);
-      }
+    .remove-btn:hover {
+        background: #a71d2a !important;
+    }
 
-      /* Specific Row Styles */
-      .grand-total {
-        background-color: #eef1f5;
-        font-weight: bold;
-      }
+    .sortable-item {
+        background: #e8f0fe;
+        border: 1px solid #a7c1f5;
+    }
 
-      .subtotal-row {
-        background-color: #f8f9fa;
-        border-top: 2px solid #dee2e6;
-      }
-
-      .subtotal-row td {
+    .format-tab.active {
+        border-color: #1861F5;
         font-weight: 600;
-      }
+    }
 
-      /* Rename Fields */
-      .rename-field {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin: 10px 0;
-      }
+    .group-header {
+        background: #e6edff;
+    }
 
-      .rename-field label {
-        flex: 0 0 120px;
-        font-weight: 500;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-      }
+    .subtotal-row {
+        background-color: #e6edff !important;
+        border-top: 2px solid #b6c9ff !important;
+    }
 
-      .rename-field input {
-        flex: 1;
-        padding: 8px;
-      }
-    </style>
+    .subtotal {
+        background-color: #d9e4ff !important;
+    }
+
+    .grand-total {
+        background-color: #d1dbff !important;
+        font-weight: bold;
+    }
+
+    .format-settings,
+    .rename-modal {
+        border: 2px solid #1861F5;
+    }
+
+    .title-color-picker input,
+    .color-picker input,
+    .alignment-control select {
+        border: 1px solid #cbd5e0;
+        padding: 5px;
+    }
+
+    .sortable-list {
+        border: 1px solid #cbd5e0;
+        background: #f4f7ff;
+    }
+
+    table {
+        border: 2px solid #cbd5e0;
+        background: white;
+    }
+
+    th, td {
+        border: 1px solid #cbd5e0;
+    }
+</style>
+
   </head>
   <body>
     <!-- Main Menu -->
