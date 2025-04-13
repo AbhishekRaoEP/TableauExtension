@@ -80,7 +80,11 @@
     </div>
 
     <div id="config-wrapper" style="display:none;">
+        
     <div id="config-panel">
+        <div style="text-align:right; margin-bottom: 10px;">
+    <button onclick="backToMain()" style="background: #777;">← Back</button>
+</div>
         <div class="config-section">
             <h3>Header Rows</h3>
             <div class="header-rows-control">
@@ -389,6 +393,11 @@
 function openConfig() {
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('config-wrapper').style.display = 'block';
+}
+
+function backToMain() {
+    document.getElementById('config-wrapper').style.display = 'none';
+    document.getElementById('main-menu').style.display = 'block';
 }
 
     function initSortables() {
